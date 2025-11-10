@@ -27,6 +27,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.lab_week_09.ui.theme.LAB_WEEK_09Theme
+import com.example.lab_week_09.ui.theme.OnBackgroundTitleText
+import com.example.lab_week_09.ui.theme.PrimaryTextButton
 
 data class Student(
     var name: String
@@ -87,11 +89,9 @@ fun HomeContent(
                 modifier = Modifier.padding(16.dp).fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = stringResource(
-                        id = R.string.enter_item
-                    )
-                )
+                OnBackgroundTitleText(text = stringResource(
+                    id = R.string.enter_item
+                ))
                 TextField(
                     value = inputField.name,
                     keyboardOptions = KeyboardOptions(
@@ -102,14 +102,10 @@ fun HomeContent(
                     }
                 )
 
-                Button(onClick = {
+                PrimaryTextButton(text = stringResource(
+                    id = R.string.button_click
+                )) {
                     onButtonClick()
-                }) {
-                    Text(
-                        text = stringResource(
-                            id = R.string.button_click
-                        )
-                    )
                 }
             }
         }
