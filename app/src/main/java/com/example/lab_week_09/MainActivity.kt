@@ -11,10 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +35,12 @@ import com.example.lab_week_09.ui.theme.LAB_WEEK_09Theme
 import com.example.lab_week_09.ui.theme.OnBackgroundItemText
 import com.example.lab_week_09.ui.theme.OnBackgroundTitleText
 import com.example.lab_week_09.ui.theme.PrimaryTextButton
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import com.squareup.moshi.Types
+import java.net.URLEncoder
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 
 data class Student(
     var name: String
@@ -105,12 +109,26 @@ fun Home(
         inputField.value,
         { input -> inputField.value = inputField.value.copy(name = input) },
         {
+            // Fixed: Only add if the input is not blank
             if (inputField.value.name.isNotBlank()) {
                 listData.add(inputField.value)
                 inputField.value = Student("")
             }
         },
-        { navigateFromHomeToResult(listData.joinToString(", ") { it.name }) }
+        {
+            // BONUS: Convert list to JSON using Moshi
+            val moshi = Moshi.Builder()
+                .add(KotlinJsonAdapterFactory())
+                .build()
+
+            val listType = Types.newParameterizedType(List::class.java, Student::class.java)
+            val adapter = moshi.adapter<List<Student>>(listType)
+            val json = adapter.toJson(listData.toList())
+
+            // URL encode the JSON to safely pass it through navigation
+            val encodedJson = URLEncoder.encode(json, StandardCharsets.UTF_8.toString())
+            navigateFromHomeToResult(encodedJson)
+        }
     )
 }
 
@@ -161,7 +179,7 @@ fun HomeContent(
                 modifier = Modifier.padding(vertical = 4.dp).fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = item.name)
+                OnBackgroundItemText(text = item.name)
             }
         }
     }
@@ -169,13 +187,39 @@ fun HomeContent(
 
 @Composable
 fun ResultContent(listData: String){
-    Column(
+    // BONUS: Parse JSON back to list using Moshi
+    val moshi = Moshi.Builder()
+        .add(KotlinJsonAdapterFactory())
+        .build()
+
+    val listType = Types.newParameterizedType(List::class.java, Student::class.java)
+    val adapter = moshi.adapter<List<Student>>(listType)
+
+    // URL decode the JSON
+    val decodedJson = URLDecoder.decode(listData, StandardCharsets.UTF_8.toString())
+    val students = try {
+        adapter.fromJson(decodedJson) ?: emptyList()
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    LazyColumn(
         modifier = Modifier
-            .padding(vertical = 4.dp)
+            .padding(16.dp)
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        OnBackgroundItemText(text = listData)
+        item {
+            OnBackgroundTitleText(text = "Result List")
+        }
+        items(students) { student ->
+            Column(
+                modifier = Modifier.padding(vertical = 4.dp).fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                OnBackgroundItemText(text = student.name)
+            }
+        }
     }
 }
 
@@ -183,5 +227,7 @@ fun ResultContent(listData: String){
 @Composable
 fun PreviewHome() {
     val navController = rememberNavController()
-    App(navController = navController)
+    LAB_WEEK_09Theme {
+        App(navController = navController)
+    }
 }
